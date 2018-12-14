@@ -56,6 +56,20 @@ class Node:
 
 """brauche funktion, die für irgendein spiel, den status zurückgibt und dazu ebenfalls die liste aller danach möglichen
 zustände ausgeben kann, ausser den zufällig spielen kann"""
+
+class State:
+    """schnittstelle zum spiel"""
+    def __init__(self):
+        pass
+
+    def random_play(self):
+        pass
+
+    def get_possible_next_states(self):
+        pass
+
+
+
 class MCTS:
 
 
@@ -103,8 +117,8 @@ class MCTS:
 
     def expand(self, node):
         """adds new leaf nodes for all possible game states to the node and initializes them correctly"""
-        for state in node.state.possible_next_states():
-            pass
+        for state in node.state.get_possible_next_states():
+            node.children.append(Node(state, node))
 
 
     # randomly select next game state
