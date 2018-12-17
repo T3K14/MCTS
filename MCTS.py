@@ -2,7 +2,9 @@ import random
 import sys
 import numpy as np
 
-#from SPIELSCRIPT import playrandom as play_game_random
+#from SPIELSCRIPT import playrandom as play_game_random and get_possible_next_states
+from tictactoe import playrandom as play_game_random, get_possible_next_states
+import tictactoe
 
 """"not retaining subtree-information
 (should follow after implementation)"""
@@ -16,6 +18,7 @@ class Tree:
 
     def update_root(self, state):
         self.root = Node(state)
+
 
 class Node:
 
@@ -92,7 +95,7 @@ class MCTS:
             promising_node = self.select_next_node(tree.root)
 
             # expansion if the choosen note does not represent and and-state of the game
-            if promising_node.state == 1:
+            if promising_node.state:
                 self.expand(promising_node)
 
             # simulation
@@ -138,7 +141,7 @@ class MCTS:
         # player of all child nodes is not player of parent node
         player = not node.parent.player
 
-        for state in node.state.get_possible_next_states():
+        for state in get_possible_next_states(node):
             node.children.append(Node(state, player, node))
 
 
@@ -184,14 +187,9 @@ class MCTS:
 
 if __name__ == '__main__':
 
-    tree = Tree(0)
-    mcts = MCTS()
+    tree = Tree([' '] * 10)
+    mcts = MCTS(2)
 
-    mcts.find_next_move(tree, 2)
-    #print(2*float('inf'))
-    #print(12000/sys.maxsize)
-    #print(sys.maxsize+1)
 
-    mcts.select_next_node(tree.root)
 
 
