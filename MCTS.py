@@ -6,9 +6,6 @@ import numpy as np
 from tictactoe import playrandom as play_game_random, get_possible_next_states
 import tictactoe
 
-""""not retaining subtree-information
-(should follow after implementation)"""
-
 
 class Tree:
     """class to save the tree and update it to the next node with its children after succesfull choice"""
@@ -44,8 +41,8 @@ class Node:
 
         self.children.append(child_node)
 
-    def get_child_with_max_score(self):
-        pass
+    def get_best_child(self):
+        return max(self.children, key=lambda nod: nod.visits)
 
     def calculate_UCT_value(self, c=1.4142):
 
@@ -112,13 +109,15 @@ class MCTS:
 
             self.backprob(promising_node, player, result)
 
-
-        # auswertung, rückgabe von bestem child-state
             t += 1
+        # auswertung, rückgabe von bestem child-state
+        best_node = tree.root.get_best_child()
+
+        tree.root = best_node
+
+        return best_node.state
 
         # tree zu dem endzeitpunkt ausgeben
-
-
 
 
     def select_next_node(self, root_node):
@@ -135,6 +134,7 @@ class MCTS:
 
         return node
 
+
     def expand(self, node):
         """adds new leaf nodes for all possible game states to the node and initializes them correctly"""
 
@@ -150,6 +150,7 @@ class MCTS:
         """method for choosing the next node out of all possible next game states at random"""
 
         move = random.choice(possible_moves)
+
 
     def simulate(self, node, play_random):
         """method for random simulating until end state and evaluating
@@ -176,20 +177,14 @@ class MCTS:
 
             node = node.parent
 
-#def game():
-    # erstelle tree
-
-    #loop: abwechselnd spielen spieler ihre züge, zb über mcts oder echte Spieler
-        #
-
-    #pass
-
 
 if __name__ == '__main__':
 
     tree = Tree([' '] * 10)
     mcts = MCTS(2)
 
+    print(tree.root.state)
+    play_game_random(tree.root)
 
 
 
