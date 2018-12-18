@@ -184,7 +184,7 @@ if __name__ == '__main__':
     mcts = MCTS(2)
 
     print(tree.root.state)
-    play_game_random(tree.root)
-
+    #play_game_random(tree.root)
+    print(get_possible_next_states(tree.root))
 
 

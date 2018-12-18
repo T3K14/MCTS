@@ -1,91 +1,5 @@
 import random
 
-class Node:
-
-    def __init__(self, state, player=0, parent=None):
-
-        self.state = state          # current game state (placed tiles, figures, etc)
-        self.player = player        # bool, True 1, False 0
-
-        self.wins = 0
-        self.visits = 0
-
-        self.parent = parent
-        self.children = []
-
-        print("normal Node created")
-
-    #@classmethod
-    #def create_root_node(cls, state):
-    #    print("root created")
-    #    return cls(2)
-
-    def add_child(self, child_node):
-
-        self.children.append(child_node)
-
-    def get_best_child(self):
-        return max(self.children, key=lambda nod: nod.visits)
-
-    def calculate_UCT_value(self, c=1.4142):
-
-        ############################################# lieber tauschen?
-        if self.visits == 0:
-            return sys.maxsize
-        else:
-            return self.wins / self.visits + c * np.sqrt(np.log(self.parent.visits / self.visits))
-
-
-def play_random2(state, turn):
-
-    empty = []
-
-    for i, x in enumerate(state[1:]):
-
-        if x == ' ':
-            empty.append(i+1)
-
-    for i in range(len(empty[:])):
-
-        drawBoard(state)
-        print("\n")
-
-        if turn == 'player':    # X
-
-            choice1 = random.choice(empty)
-            empty.remove(choice1)
-            makeMove(state, 'X', choice1)
-            if isWinner(theBoard, playerLetter):
-                drawBoard(theBoard)
-                print('Hooray! You have won the game!')
-                #gameIsPlaying = False
-                break
-            else:
-                if isBoardFull(theBoard):
-                    drawBoard(theBoard)
-                    print('The game is a tie!')
-                    break
-                else:
-                    turn = 'computer'
-        else:
-
-            choice2 = random.choice(empty)
-            empty.remove(choice2)
-            makeMove(state, 'O', choice2)
-
-            if isWinner(theBoard, playerLetter):
-                drawBoard(theBoard)
-                print('Computer won!')
-                break
-                #gameIsPlaying = False
-            else:
-                if isBoardFull(theBoard):
-                    drawBoard(theBoard)
-                    print('The game is a tie!')
-                    break
-                else:
-                    turn = 'player'
-
 def playrandom(node):
     """bekommt eine liste und setzt darin alle freien einträge zufällig nach und nach mit abwechselnden X oder O und schaut, wer gewinnt und evaluiert"""
     # false==0, true==X
@@ -118,7 +32,7 @@ def playrandom(node):
                     print('The game is a tie!')
                     break
                 else:
-                    print("hi1", turn)
+                    #print("hi1", turn)
                     turn = 'computer'
         else:
             choice2 = random.choice(empty)
@@ -134,13 +48,27 @@ def playrandom(node):
                     print('The game is a tie!')
                     break
                 else:
-                    print("Hi2", turn)
+                    #print("Hi2", turn)
                     turn = 'player'
 
 
 def get_possible_next_states(node):
 
-    pass
+    let = 'X' if node.player else 'O'
+
+    empty = []
+    lis = []
+
+    for i, x in enumerate(node.state[1:]):
+        if x == ' ':
+            empty.append(i+1)
+
+    for i in empty:
+        state = node.state[:]
+        makeMove(state, let, i)
+        lis.append(state)
+
+    return lis
 
 
 def drawBoard(board):
