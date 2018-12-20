@@ -3,7 +3,7 @@ import sys
 import numpy as np
 
 #from SPIELSCRIPT import playrandom as play_game_random and get_possible_next_states
-from tictactoe import playrandom as play_game_random, get_possible_next_states
+from tictactoe import update_state as extern_update_state, playrandom as extern_random_play, get_possible_next_states as extern_get_next_states
 import tictactoe
 
 
@@ -19,7 +19,7 @@ class Tree:
 
 class Node:
 
-    def __init__(self, state, player=0, parent=None):
+    def __init__(self, state, player=0, parent=None, other=[]):
 
         self.state = state          # current game state (placed tiles, figures, etc)
         self.player = player        # bool, True 1, False 0
@@ -30,7 +30,7 @@ class Node:
         self.parent = parent
         self.children = []
 
-        print("normal Node created")
+        #print("normal Node created")
 
     #@classmethod
     #def create_root_node(cls, state):
@@ -61,15 +61,21 @@ zustände ausgeben kann, ausserdem zufällig spielen kann"""
 
 
 class State:
-    """schnittstelle zum spiel"""
-    def __init__(self):
-        pass
+    """schnittstelle zum spiel, weiß wer dran ist, wer welche Frabe hat, kennt Spielbrett, etc"""
+    def __init__(self, infolist):
+        self.infolist = infolist
+
+    def update_State(self):
+
+        extern_update_state(self.infolist)
 
     def random_play(self):
-        pass
+
+        extern_random_play(self.infolist)
 
     def get_possible_next_states(self):
-        pass
+
+        extern_get_next_states(self.infolist)
 
 
 class MCTS:
@@ -78,20 +84,23 @@ class MCTS:
 
         self.players = number_players
 
+    def set_starting_player(self, tree, player):
+        tree.root.player = player
+
     def find_next_move(self, tree):
         """find the best next move in given settings"""
 
         # startzeit festlegen
         t = 0
-        t_end = 1
+        t_end = 100
 
         # loop: solange zeit übrig:
-        while(t < t_end):
+        while t < t_end:
 
             # selection
             promising_node = self.select_next_node(tree.root)
 
-            # expansion if the choosen note does not represent and and-state of the game
+            # expansion if the choosen note does not represent an and-state of the game
             if promising_node.state:
                 self.expand(promising_node)
 
@@ -139,10 +148,10 @@ class MCTS:
         """adds new leaf nodes for all possible game states to the node and initializes them correctly"""
 
         # player of all child nodes is not player of parent node
-        player = not node.parent.player
+        player = not node.player
 
         for state in get_possible_next_states(node):
-            node.children.append(Node(state, player, node))
+            node.children.append(Node(state, player, node, node.other))
 
 
     # randomly select next game state
@@ -183,8 +192,87 @@ if __name__ == '__main__':
     tree = Tree([' '] * 10)
     mcts = MCTS(2)
 
-    print(tree.root.state)
-    #play_game_random(tree.root)
-    print(get_possible_next_states(tree.root))
+    print('Welcome to MCTS-Tic Tac Toe!')
+
+    while True:
+        # Reset the board
+        theBoard = [' '] * 10
+        playerLetter, computerLetter = tictactoe.inputPlayerLetter()
+        turn = tictactoe.whoGoesFirst()
+
+        # info darüber, wer welches symbol spielt
+        tree.root.other.append(computerLetter)
+        tree.root.other.append(turn)
+
+        print('The ' + turn + ' will go first.')
+
+
+
+        # set first player
+        #if turn == 'computer':
+        #    tree.root.player
+
+        gameIsPlaying = True
+#
+        while gameIsPlaying:
+            #print(theBoard)
+            if turn == 'player':
+                # Player's turn.
+                tictactoe.drawBoard(theBoard)
+
+                move = tictactoe.getPlayerMove(theBoard)
+
+
+
+                tictactoe.makeMove(theBoard, playerLetter, move)
+
+                print(theBoard)
+
+                if not tree.root.children:
+
+                    tree.root.state = theBoard
+                else:
+                    for child in tree.root.children:
+                        if child.state == theBoard:
+
+                            tree.root = child
+                            break
+
+                if tictactoe.isWinner(theBoard, playerLetter):
+                    tictactoe.drawBoard(theBoard)
+                    print('Hooray! You have won the game!')
+                    gameIsPlaying = False
+                else:
+                    if tictactoe.isBoardFull(theBoard):
+                        tictactoe.drawBoard(theBoard)
+                        print('The game is a tie!')
+                        break
+                    else:
+                        turn = 'computer'
+                        tree.root.other[1] = 'computer'
+#
+            else:
+                # Computer's turn.
+                #move = getComputerMove(theBoard, computerLetter)
+
+                move = mcts.find_next_move(tree)
+
+                tictactoe.makeMove(theBoard, computerLetter, move)
+
+                if tictactoe.isWinner(theBoard, computerLetter):
+                    tictactoe.drawBoard(theBoard)
+                    print('The computer has beaten you! You lose.')
+                    gameIsPlaying = False
+                else:
+                    if tictactoe.isBoardFull(theBoard):
+                        tictactoe.drawBoard(theBoard)
+                        print('The game is a tie!')
+                        break
+                    else:
+                        turn = 'player'
+                        tree.root.other[1] = 'player'
+
+        if not tictactoe.playAgain():
+            break
 
 

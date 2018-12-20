@@ -1,13 +1,30 @@
 import random
 
+def update_state():
+    pass
+
 def playrandom(node):
     """bekommt eine liste und setzt darin alle freien einträge zufällig nach und nach mit abwechselnden X oder O und schaut, wer gewinnt und evaluiert"""
     # false==0, true==X
-    playerLetter, computerLetter = inputPlayerLetter()
-    turn = whoGoesFirst()
-    print('The ' + turn + ' will go first.')
+    #playerLetter, computerLetter = inputPlayerLetter()
+    #turn = whoGoesFirst()
+    #print('The ' + turn + ' will go first.')
 
-    theBoard = node.state
+    #if node.player == 1:
+    #    playerLetter, computerLetter, turn = 'O', 'X', 'player'
+    #else:
+    #    playerLetter, computerLetter, turn = 'X', 'O', 'computer'
+
+    computerLetter = node.other[0]
+    turn = node.other[1]
+
+    if computerLetter == 'O':
+
+        playerLetter = 'X'
+    else:
+        playerLetter = 'O'
+
+    theBoard = node.state[:]
     empty = []
 
     for i, x in enumerate(node.state[1:]):
@@ -17,7 +34,6 @@ def playrandom(node):
 
     for i in range(len(empty[:])):
 
-
         if turn == 'player':     # X
             choice1 = random.choice(empty)
             empty.remove(choice1)
@@ -25,11 +41,13 @@ def playrandom(node):
             if isWinner(theBoard, playerLetter):
                     drawBoard(theBoard)
                     print('Hooray! You have won the game!')
+                    return 1
                     break
             else:
                 if isBoardFull(theBoard):
                     drawBoard(theBoard)
                     print('The game is a tie!')
+                    return 0
                     break
                 else:
                     #print("hi1", turn)
@@ -38,14 +56,16 @@ def playrandom(node):
             choice2 = random.choice(empty)
             empty.remove(choice2)
             makeMove(node.state, 'O', choice2)
-            if isWinner(theBoard, playerLetter):
+            if isWinner(theBoard, computerLetter):
                     drawBoard(theBoard)
                     print('Computer won')
+                    return 0
                     break
             else:
                 if isBoardFull(theBoard):
                     drawBoard(theBoard)
                     print('The game is a tie!')
+                    return 0
                     break
                 else:
                     #print("Hi2", turn)
@@ -277,5 +297,5 @@ if __name__ == '__main__':
 
     play_random2(theBoard, turn)
 """
-    node = Node(theBoard)
-    playrandom(node)
+    #node = Node(theBoard)
+    #playrandom(node)
