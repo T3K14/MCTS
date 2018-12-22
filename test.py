@@ -1,1 +1,2 @@
-import random
+def a():
+    b()

@@ -2,10 +2,7 @@ import random
 import sys
 import numpy as np
 
-#from SPIELSCRIPT import playrandom as play_game_random and get_possible_next_states
-from tictactoe import update_state as extern_update_state, playrandom as extern_random_play, get_possible_next_states as extern_get_next_states
-import tictactoe
-
+#from tictactoe2 import get_possible_next_states, playrandom
 
 class Tree:
     """class to save the tree and update it to the next node with its children after succesfull choice"""
@@ -19,7 +16,7 @@ class Tree:
 
 class Node:
 
-    def __init__(self, state, player=0, parent=None, other=[]):
+    def __init__(self, state, player=0, parent=None):
 
         self.state = state          # current game state (placed tiles, figures, etc)
         self.player = player        # bool, True 1, False 0
@@ -47,11 +44,17 @@ class Node:
     def calculate_UCT_value(self, c=1.4142):
 
         ############################################# lieber tauschen?
+        if self.parent.visits == 0:
+            if self.visits == 0:
+                return sys.maxsize
+            else:
+                return self.wins/self.visits
+
         if self.visits == 0:
             return sys.maxsize
         else:
-            return self.wins / self.visits + c * np.sqrt(np.log(self.parent.visits / self.visits))
-
+            result = self.wins / self.visits + c * np.sqrt(np.log(self.parent.visits / self.visits))
+            return result
     # increment visits
 
     # increment wins
@@ -62,20 +65,54 @@ zustände ausgeben kann, ausserdem zufällig spielen kann"""
 
 class State:
     """schnittstelle zum spiel, weiß wer dran ist, wer welche Frabe hat, kennt Spielbrett, etc"""
-    def __init__(self, infolist):
-        self.infolist = infolist
+    def __init__(self, board, *args):
+        self.board = board
+        self.infolist = [i for i in args]
 
-    def update_State(self):
+        self.status = True
 
-        extern_update_state(self.infolist)
+
+
+    def is_normal_state(self, extern_get_next_states):
+
+        states = extern_get_next_states(self)
+
+        if states:
+            return True
+        else:
+            return False
+
+    # to update the state after another player made a move (go the tree one step down to the node that represents
+    # the played move)
+    def update_state(self, tree, state):
+
+        """ wenn die rootnode keine kinder hat, wird der jetzige stand als neuer root-state festgelegt
+           ansonsten wird das kind, welches den gespielten state repräsentiert zum root gemacht, von wo aus dann
+           weiter gespielt wird"""
+
+        if tree.root.children:
+            for child in tree.root.children:
+
+                if child.state == state:
+                    tree.root = child
+                    break
+        else:
+            tree.root.state = state
 
     def random_play(self):
-
-        extern_random_play(self.infolist)
+        from tictactoe2 import playrandom
+        return playrandom(self)
 
     def get_possible_next_states(self):
 
-        extern_get_next_states(self.infolist)
+        from tictactoe2 import get_possible_next_states
+        return get_possible_next_states(self)
+
+        #states = extern_get_next_states(self)
+        #if states:
+        #    return True, states
+        #else:
+        #    return False, states
 
 
 class MCTS:
@@ -101,7 +138,7 @@ class MCTS:
             promising_node = self.select_next_node(tree.root)
 
             # expansion if the choosen note does not represent an and-state of the game
-            if promising_node.state:
+            if promising_node.state.status:
                 self.expand(promising_node)
 
             # simulation
@@ -110,7 +147,7 @@ class MCTS:
             choosen_node = promising_node
             if len(promising_node.children) > 0:
                 choosen_node = random.choice(promising_node.children)
-            result = self.simulate(choosen_node, play_game_random)        # result ist wert(1 für win, 0 for loss, 0.5 for tie
+            result = self.simulate(choosen_node)        # result ist wert(1 für win, 0 for loss, 0.5 for tie
 
             # backprob
 
@@ -139,7 +176,7 @@ class MCTS:
         # as long as there are known children, choose next child-node with uct
         while len(node.children) != 0:
 
-            node = max(*node.children, key=lambda nod: nod.calculate_UCT_value)
+            node = max(*node.children, key=lambda nod: nod.calculate_UCT_value())
 
         return node
 
@@ -150,18 +187,30 @@ class MCTS:
         # player of all child nodes is not player of parent node
         player = not node.player
 
-        for state in get_possible_next_states(node):
-            node.children.append(Node(state, player, node, node.other))
+        if node.state.infolist[0] == 'X':
+            let = 'O'
+        else:
+            let = 'X'
+
+        if node.state.infolist[1] == 'player':
+            turn = 'computer'
+        else:
+            turn = 'player'
+
+        #for state in node.get_best_child():
+
+        for state in node.state.get_possible_next_states():
+            node.children.append(Node(State(state.board, let, turn), player, node))
 
 
-    # randomly select next game state
+    # randomly select next game state #UNNÖTIG
     def random_select_new_node(self, possible_moves):
         """method for choosing the next node out of all possible next game states at random"""
 
         move = random.choice(possible_moves)
 
 
-    def simulate(self, node, play_random):
+    def simulate(self, node):
         """method for random simulating until end state and evaluating
 
         needs a function that can play the wanted game random from any state till the end only given the game state
@@ -171,7 +220,7 @@ class MCTS:
         by MCTS"""
 
         #choice = random.choice(start_node.children)
-        return play_random(node)        #0 loss, 1 victory, 0.5 tie
+        return node.state.random_play()        #0 loss, 1 victory, 0.5 tie
 
 
     def backprob(self, node, player, result):
@@ -188,91 +237,4 @@ class MCTS:
 
 
 if __name__ == '__main__':
-
-    tree = Tree([' '] * 10)
-    mcts = MCTS(2)
-
-    print('Welcome to MCTS-Tic Tac Toe!')
-
-    while True:
-        # Reset the board
-        theBoard = [' '] * 10
-        playerLetter, computerLetter = tictactoe.inputPlayerLetter()
-        turn = tictactoe.whoGoesFirst()
-
-        # info darüber, wer welches symbol spielt
-        tree.root.other.append(computerLetter)
-        tree.root.other.append(turn)
-
-        print('The ' + turn + ' will go first.')
-
-
-
-        # set first player
-        #if turn == 'computer':
-        #    tree.root.player
-
-        gameIsPlaying = True
-#
-        while gameIsPlaying:
-            #print(theBoard)
-            if turn == 'player':
-                # Player's turn.
-                tictactoe.drawBoard(theBoard)
-
-                move = tictactoe.getPlayerMove(theBoard)
-
-
-
-                tictactoe.makeMove(theBoard, playerLetter, move)
-
-                print(theBoard)
-
-                if not tree.root.children:
-
-                    tree.root.state = theBoard
-                else:
-                    for child in tree.root.children:
-                        if child.state == theBoard:
-
-                            tree.root = child
-                            break
-
-                if tictactoe.isWinner(theBoard, playerLetter):
-                    tictactoe.drawBoard(theBoard)
-                    print('Hooray! You have won the game!')
-                    gameIsPlaying = False
-                else:
-                    if tictactoe.isBoardFull(theBoard):
-                        tictactoe.drawBoard(theBoard)
-                        print('The game is a tie!')
-                        break
-                    else:
-                        turn = 'computer'
-                        tree.root.other[1] = 'computer'
-#
-            else:
-                # Computer's turn.
-                #move = getComputerMove(theBoard, computerLetter)
-
-                move = mcts.find_next_move(tree)
-
-                tictactoe.makeMove(theBoard, computerLetter, move)
-
-                if tictactoe.isWinner(theBoard, computerLetter):
-                    tictactoe.drawBoard(theBoard)
-                    print('The computer has beaten you! You lose.')
-                    gameIsPlaying = False
-                else:
-                    if tictactoe.isBoardFull(theBoard):
-                        tictactoe.drawBoard(theBoard)
-                        print('The game is a tie!')
-                        break
-                    else:
-                        turn = 'player'
-                        tree.root.other[1] = 'player'
-
-        if not tictactoe.playAgain():
-            break
-
-
+    print("In MCTS.py script")
