@@ -272,22 +272,33 @@ def is_normal_state(state):
 
 if __name__ == '__main__':
 
-    print('\nWelcome to MCTS-Tic Tac Toe!')
+####
+    theBoard = [' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
+    #info = ['O', 'computer']
 
-    playerLetter, computerLetter = inputPlayerLetter()
-    turn = whoGoesFirst()
-    #turn = 'computer'
-    theBoard = [' '] * 10
+    #s = State(b, info[0], info[1])
+    #e = playrandom(s)
+####
+    print('Welcome to MCTS-Tic Tac Toe!')
 
-    le = playerLetter if turn == 'player' else computerLetter
-    start_state = State(theBoard, le, turn)
+    #playerLetter, computerLetter = inputPlayerLetter()
+    #turn = whoGoesFirst()
+
+    #theBoard = [' ', 'X', ' ', ' ', 'O', 'O', 'X', 'X', ' ', ' ']
+
+    #le = playerLetter if turn == 'player' else computerLetter
+    start_state = State(theBoard, 'O', 'computer')
 
     tree = Tree(start_state)
     mcts = MCTS(2, playrandom, get_possible_next_states)
 
+    computerLetter = 'O'
+    playerLetter = 'X'
+    turn = 'computer'
+
     #while True:
 
-    print('The ' + turn + ' will go first.')
+    #print('The ' + turn + ' will go first.')
     gameIsPlaying = True
 
 
@@ -308,7 +319,7 @@ if __name__ == '__main__':
 
             if isWinner(theBoard, playerLetter):
                 drawBoard(theBoard)
-                print('You have won the game!')
+                print('Hooray! You have won the game!')
                 gameIsPlaying = False
             else:
                 if isBoardFull(theBoard):
@@ -323,8 +334,12 @@ if __name__ == '__main__':
             # Computer's turn.
             print('\n')
             drawBoard(theBoard)
-            choosen_next_state = mcts.find_next_move(tree, tree.root.state.infolist[0])
-
+            counter = 0
+            for i in range(100):
+                choosen_next_state = mcts.find_next_move(tree, tree.root.state.infolist[0])
+                if choosen_next_state.board[5] != 'O':
+                    counter += 1
+            print("COUNTER:", counter)
             # make the move that was choosen by the mcts-algorithm
             for i, entry in enumerate(theBoard):
                 if entry != choosen_next_state.board[i]:
@@ -335,7 +350,7 @@ if __name__ == '__main__':
 
             if isWinner(theBoard, computerLetter):
                 drawBoard(theBoard)
-                print('The computer has beaten you!')
+                print('The computer has beaten you! You lose.')
                 gameIsPlaying = False
             else:
                 if isBoardFull(theBoard):

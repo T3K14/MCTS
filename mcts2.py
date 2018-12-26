@@ -2,7 +2,8 @@ import random
 import sys
 import numpy as np
 
-#from tictactoe2 import get_possible_next_states, playrandom
+
+# from tictactoe2 import get_possible_next_states, playrandom
 
 class Tree:
     """class to save the tree and update it to the next node with its children after succesfull choice"""
@@ -18,8 +19,8 @@ class Node:
 
     def __init__(self, state, player=0, parent=None):
 
-        self.state = state          # current game state (placed tiles, figures, etc)
-        self.player = player        # bool, True 1, False 0
+        self.state = state  # current game state (placed tiles, figures, etc)
+        self.player = player  # bool, True 1, False 0
 
         self.wins = 0
         self.visits = 0
@@ -27,11 +28,10 @@ class Node:
         self.parent = parent
         self.children = []
 
+        # print("normal Node created")
 
-        #print("normal Node created")
-
-    #@classmethod
-    #def create_root_node(cls, state):
+    # @classmethod
+    # def create_root_node(cls, state):
     #    print("root created")
     #    return cls(2)
 
@@ -45,11 +45,11 @@ class Node:
     def calculate_UCT_value(self, c=1.4142):
 
         ############################################# lieber tauschen?
-        if self.parent.visits == 0:
-            if self.visits == 0:
-                return sys.maxsize
-            else:
-                return self.wins/self.visits
+        #if self.parent.visits == 0:
+            #if self.visits == 0:
+            #    return sys.maxsize
+            #else:
+            #    return self.wins / self.visits
 
         if self.visits == 0:
             return sys.maxsize
@@ -60,12 +60,14 @@ class Node:
 
     # increment wins
 
+
 """brauche funktion, die für irgendein spiel, den status zurückgibt und dazu ebenfalls die liste aller danach möglichen
 zustände ausgeben kann, ausserdem zufällig spielen kann"""
 
 
 class State:
     """schnittstelle zum spiel, weiß wer dran ist, wer welche Frabe hat, kennt Spielbrett, etc"""
+
     def __init__(self, board, *args):
         self.board = board
         self.infolist = [i for i in args]
@@ -92,43 +94,47 @@ class State:
         if tree.root.children:
             for child in tree.root.children:
 
-                if child.state == state:
+                if child.state.board == state.board:
                     tree.root = child
                     break
         else:
             tree.root.state = state
 
-    def random_play(self):
-        from tictactoe2 import playrandom
-        return playrandom(self)
+    def random_play(self, ran):
+        return ran(self)
 
-    def get_possible_next_states(self):
+    def get_possible_next_states(self, get):
 
-        from tictactoe2 import get_possible_next_states
-        return get_possible_next_states(self)
+        #from tictactoe2 import get_possible_next_states
+        return get(self)
 
-        #states = extern_get_next_states(self)
-        #if states:
+        # states = extern_get_next_states(self)
+        # if states:
         #    return True, states
-        #else:
+        # else:
         #    return False, states
 
 
 class MCTS:
 
-    def __init__(self, number_players):
+    def __init__(self, number_players, random_play, get_possible_next_states):
 
+        #self.ol = ol
         self.players = number_players
+        self.random_play = random_play
+        self.get_possible_next_states = get_possible_next_states
 
     def set_starting_player(self, tree, player):
         tree.root.player = player
 
-    def find_next_move(self, tree):
+    def find_next_move(self, tree, letter):
         """find the best next move in given settings"""
 
         # startzeit festlegen
         t = 0
-        t_end = 100
+        t_end = 3000
+
+        # player
 
         # loop: solange zeit übrig:
         while t < t_end:
@@ -137,7 +143,9 @@ class MCTS:
             promising_node = self.select_next_node(tree.root)
 
             # expansion if the choosen note does not represent an and-state of the game
-            if promising_node.state.status:
+            # keine expansion, wenn der state ein end-state ist
+            #if promising_node.state.status:
+            if self.get_possible_next_states(promising_node.state) != []:
                 self.expand(promising_node)
 
             # simulation
@@ -146,13 +154,13 @@ class MCTS:
             choosen_node = promising_node
             if len(promising_node.children) > 0:
                 choosen_node = random.choice(promising_node.children)
-            result = self.simulate(choosen_node)        # result ist wert(1 für win, 0 for loss, 0.5 for tie
+            result = self.simulate(choosen_node)
 
             # backprob
 
             player = tree.root.player
 
-            self.backprob(promising_node, player, result)
+            self.backprob(choosen_node, player, result, letter)
 
             t += 1
         # auswertung, rückgabe von bestem child-state
@@ -164,7 +172,6 @@ class MCTS:
 
         # tree zu dem endzeitpunkt ausgeben
 
-
     def select_next_node(self, root_node):
         """method to choose the next node from the start at root node until one approaches the end of the tree"""
 
@@ -174,11 +181,10 @@ class MCTS:
 
         # as long as there are known children, choose next child-node with uct
         while len(node.children) != 0:
-
-            node = max(*node.children, key=lambda nod: nod.calculate_UCT_value())
+            #print("stop")
+            node = max(node.children, key=lambda nod: nod.calculate_UCT_value())
 
         return node
-
 
     def expand(self, node):
         """adds new leaf nodes for all possible game states to the node and initializes them correctly"""
@@ -196,18 +202,16 @@ class MCTS:
         else:
             turn = 'player'
 
-        #for state in node.get_best_child():
+        # for state in node.get_best_child():
 
-        for state in node.state.get_possible_next_states():
+        for state in node.state.get_possible_next_states(self.get_possible_next_states):
             node.children.append(Node(State(state.board, let, turn), player, node))
-
 
     # randomly select next game state #UNNÖTIG
     def random_select_new_node(self, possible_moves):
         """method for choosing the next node out of all possible next game states at random"""
 
         move = random.choice(possible_moves)
-
 
     def simulate(self, node):
         """method for random simulating until end state and evaluating
@@ -218,22 +222,72 @@ class MCTS:
         this play_random-function has to return the result of the played game in  a format that can be evaluated
         by MCTS"""
 
-        #choice = random.choice(start_node.children)
-        return node.state.random_play()        #0 loss, 1 victory, 0.5 tie
+        # choice = random.choice(start_node.children)
+        return self.random_play(node.state)  # 0 loss, 1 victory, 0.5 tie
 
-
-    def backprob(self, node, player, result):
+    def backprob(self, node, player, result, start_player):
         """method for updating weights and visits of all included nodes in after one simulation process"""
 
-        while node.parent != None:
+        #if result != 'O' and result != 'X':
+#
+        #    while node.parent != None:
+        #        node.visits += 1
+#
+        #        # if node corresponds to the same player
+        #        #if node.player == player:
+        #        node.wins += 0.5
+#
+#
+        #        node = node.parent
+        #elif result != start_player and result != 0:
+#
+        #    while node.parent != None:
+        #        node.visits += 1
+#
+        #        # if node corresponds to the same player
+        #        if node.player == player:
+        #            node.wins += 1
+#
+#
+        #        node = node.parent
+        #else:
+        #    while node.parent != None:
+        #        node.visits += 1
+#
+        #        # if node corresponds to the same player
+        #        if node.player != player:
+        #            node.wins += 1
+#
+#
+        #        node = node.parent
+
+        if result == 0:
+            while node.parent != None:
+                node.visits += 1
+                node.wins += 0.5
+                node = node.parent
+
+            # für die root node:
             node.visits += 1
+            node .wins += 0.5
 
-            # if node corresponds to the same player
-            if node.player == player:
-                node.wins += result
+        else:
+            while node.parent != None:
+                node.visits += 1
 
-            node = node.parent
+                # if node corresponds to the same player
+                """ muss allg mit player gemacht werden. jetzt: der spieler, der in einem state als nächster dran ist, möchte 
+                den besten nächsten zug auswählen, dh immer die nodes, die er wählt sammeln die wins und am ende wird davon die beste
+                ausgewählt, die die am häufigsten gevisited wurde"""
+                if node.state.infolist[0] != result:    # wenn der spieler der in node.state als nächster dran ist nicht gewonnen hat
 
+                    node.wins += 1
+                node = node.parent
+
+            #für die root node:
+            node.visits += 1
+            if node.state.infolist[0] != result:
+                node.wins += 1
 
 if __name__ == '__main__':
     print("In MCTS.py script")
