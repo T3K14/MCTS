@@ -15,7 +15,7 @@ class Node:
     def __init__(self, state, player=None, parent=None):
 
         self.state = state  # current game state (placed tiles, figures, etc)
-        self.player = player  # bool, True 1, False 0
+        self.player = player
 
         self.wins = 0
         self.visits = 0
@@ -40,7 +40,7 @@ class Node:
 
 
 class State:
-    """schnittstelle zum spiel, weiß wer welche Frabe hat, kennt Spielbrett, etc"""
+    """connection to the game (eg knows the board etc)"""
 
     def __init__(self, status, board, *args):
         self.board = board
@@ -50,6 +50,7 @@ class State:
 
 
 class MCTS:
+    """MCTS-class with essential update functions and the core algorithm functions"""
 
     def __init__(self, player_number, random_play, get_possible_next_states):
 
@@ -67,28 +68,28 @@ class MCTS:
         self.get_possible_next_states = get_possible_next_states
 
     def update_root(self, new_state):
+        """method to update the root, if another player made a move"""
         if self.root.children:
             for child in self.root.children:
 
                 if child.state.board == new_state.board:
                     self.root = child
-
         else:
-            # player hat ersten Zug gemacht
+            # another player made the first move of the game
             self.root = Node(new_state, self.next_player[self.root.player])
 
-    # wird nicht genutzt
+    # not used but can be for better understanding
     def get_next_player(self, player):
         return self.next_player[player]
 
     def find_next_move(self):
         """find the best next move in given settings"""
 
-        # startzeit festlegen
+        # start time replacement
         t = 0
         t_end = 3000
 
-        # loop: solange zeit übrig:
+        # loop as long as time is left:
         while t < t_end:
 
             # selection
@@ -111,7 +112,7 @@ class MCTS:
             self.backprop(choosen_node, result)
 
             t += 1
-        # auswertung, rückgabe von neuer root_node
+        # return the most visited child node with the "best next move"
         return self.root.get_best_child()
 
     def select_next_node(self):
