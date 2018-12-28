@@ -60,11 +60,6 @@ class Node:
 
     # increment wins
 
-
-"""brauche funktion, die für irgendein spiel, den status zurückgibt und dazu ebenfalls die liste aller danach möglichen
-zustände ausgeben kann, ausserdem zufällig spielen kann"""
-
-
 class State:
     """schnittstelle zum spiel, weiß wer dran ist, wer welche Frabe hat, kennt Spielbrett, etc"""
 
@@ -98,10 +93,9 @@ class State:
                     tree.root = child
                     break
         else:
+            print("how did I get here?")
             tree.root.state = state
 
-    def random_play(self, ran):
-        return ran(self)
 
     def get_possible_next_states(self, get):
 
@@ -145,7 +139,11 @@ class MCTS:
             # expansion if the choosen note does not represent an and-state of the game
             # keine expansion, wenn der state ein end-state ist
             #if promising_node.state.status:
+
+
+
             if self.get_possible_next_states(promising_node.state) != []:
+                #print("nicht vorher")
                 self.expand(promising_node)
 
             # simulation
@@ -202,16 +200,12 @@ class MCTS:
         else:
             turn = 'player'
 
-        # for state in node.get_best_child():
 
+
+        # for state in node.get_best_child():
         for state in node.state.get_possible_next_states(self.get_possible_next_states):
             node.children.append(Node(State(state.board, let, turn), player, node))
 
-    # randomly select next game state #UNNÖTIG
-    def random_select_new_node(self, possible_moves):
-        """method for choosing the next node out of all possible next game states at random"""
-
-        move = random.choice(possible_moves)
 
     def simulate(self, node):
         """method for random simulating until end state and evaluating
@@ -223,7 +217,7 @@ class MCTS:
         by MCTS"""
 
         # choice = random.choice(start_node.children)
-        return self.random_play(node.state)  # 0 loss, 1 victory, 0.5 tie
+        return self.random_play(node.state)
 
     def backprob(self, node, player, result, start_player):
         """method for updating weights and visits of all included nodes in after one simulation process"""

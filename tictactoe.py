@@ -1,85 +1,76 @@
 import random
+from MCTS import Node, State, MCTS
 
-def update_state(state):
-    pass
 
-def playrandom(state):
-    """bekommt eine liste und setzt darin alle freien einträge zufällig nach und nach mit abwechselnden X oder O und schaut, wer gewinnt und evaluiert"""
+def playrandom(node):
+    """bekommt eine node spielt ab dem dazugehörigen state random zu ende, returned wer gewonnen hat"""
 
-    board = state.board[:]
-    computerLetter = state.infolist[0]
-    turn = state.infolist[1]
+    board = node.state.board[:]
+    first_letter = node.player.id
+    opponent_letter = 'X' if first_letter == 'O' else 'O'
 
-    if computerLetter == 'O':
+    # if state schon endstate
+    if isWinner(board, first_letter):
+        return first_letter
+    elif isWinner(board, opponent_letter):
+        return opponent_letter
 
-        playerLetter = 'X'
-    else:
-        playerLetter = 'O'
+    if isBoardFull(board):
+        return 0
 
+    dic = {first_letter: opponent_letter, opponent_letter: first_letter}
     empty = []
 
     for i, x in enumerate(board[1:]):
-
         if x == ' ':
             empty.append(i+1)
 
+    let = first_letter
     for i in range(len(empty[:])):
 
-        if turn == 'player':     # X
-            choice1 = random.choice(empty)
-            empty.remove(choice1)
-            makeMove(board, 'X', choice1)
-            if isWinner(theBoard, playerLetter):
-                    drawBoard(theBoard)
-                    print('Hooray! You have won the game!')
-                    return 1
-                    break
-            else:
-                if isBoardFull(theBoard):
-                    drawBoard(theBoard)
-                    print('The game is a tie!')
-                    return 0
-                    break
-                else:
-                    #print("hi1", turn)
-                    turn = 'computer'
+        choice1 = random.choice(empty)
+        empty.remove(choice1)
+        makeMove(board, let, choice1)
+
+        if isWinner(board, let):
+            return let
         else:
-            choice2 = random.choice(empty)
-            empty.remove(choice2)
-            makeMove(board, 'O', choice2)
-            if isWinner(theBoard, computerLetter):
-                    drawBoard(theBoard)
-                    print('Computer won')
-                    return 0
-                    break
+            if isBoardFull(board):
+                return 0
             else:
-                if isBoardFull(theBoard):
-                    drawBoard(theBoard)
-                    print('The game is a tie!')
-                    return 0
-                    break
-                else:
-                    #print("Hi2", turn)
-                    turn = 'player'
+                let = dic[let]
 
+def get_possible_next_states(node):
+    """function that returnes list with all possible next states"""
 
-def get_possible_next_states(state):
+    # sollte hier überflüssig sein
+    if isWinner(node.state.board, 'X') or isWinner(node.state.board, 'O'):
+        print("Error, you should never get here!")
+        return []
 
-    let = 'X' if state.infolist[0] else 'O'
+    else:
+        let = node.player.id
 
-    empty = []
-    lis = []
+        empty = []
+        next_states = []
 
-    for i, x in enumerate(state.board[1:]):
-        if x == ' ':
-            empty.append(i+1)
+        for i, x in enumerate(node.state.board[1:]):
+            if x == ' ':
+                empty.append(i+1)
 
-    for i in empty:
-        state = state.board[:]
-        makeMove(state, let, i)
-        lis.append(state)
+        for i in empty:
+            board = node.state.board[:]
+            makeMove(board, let, i)
 
-    return lis
+            # if the new state is an end-state
+            if isWinner(board, let):
+                status = False
+            else:
+                status = True
+
+            next_states.append(State(status, board))
+
+        return next_states
 
 
 def drawBoard(board):
@@ -98,7 +89,6 @@ def drawBoard(board):
     print(' ' + board[1] + ' | ' + board[2] + ' | ' + board[3])
     print('   |   |')
 
-
 def inputPlayerLetter():
     # Let's the player type which letter they want to be.
     # Returns a list with the player's letter as the first item, and the computer's letter as the second.
@@ -112,7 +102,6 @@ def inputPlayerLetter():
         return ['X', 'O']
     else:
         return ['O', 'X']
-
 
 def whoGoesFirst():
     # Randomly choose the player who goes first.
@@ -129,23 +118,20 @@ def playAgain():
     print('Do you want to play again? (yes or no)')
     return input().lower().startswith('y')
 
-
 def makeMove(board, letter, move):
     board[move] = letter
-
 
 def isWinner(bo, le):
     # Given a board and a player's letter, this function returns True if that player has won.
     # We use bo instead of board and le instead of letter so we don't have to type as much.
     return ((bo[7] == le and bo[8] == le and bo[9] == le) or # across the top
-    (bo[4] == le and bo[5] == le and bo[6] == le) or # across the middle
-    (bo[1] == le and bo[2] == le and bo[3] == le) or # across the bottom
-    (bo[7] == le and bo[4] == le and bo[1] == le) or # down the left side
-    (bo[8] == le and bo[5] == le and bo[2] == le) or # down the middle
-    (bo[9] == le and bo[6] == le and bo[3] == le) or # down the right side
-    (bo[7] == le and bo[5] == le and bo[3] == le) or # diagonal
-    (bo[9] == le and bo[5] == le and bo[1] == le)) # diagonal
-
+            (bo[4] == le and bo[5] == le and bo[6] == le) or # across the middle
+            (bo[1] == le and bo[2] == le and bo[3] == le) or # across the bottom
+            (bo[7] == le and bo[4] == le and bo[1] == le) or # down the left side
+            (bo[8] == le and bo[5] == le and bo[2] == le) or # down the middle
+            (bo[9] == le and bo[6] == le and bo[3] == le) or # down the right side
+            (bo[7] == le and bo[5] == le and bo[3] == le) or # diagonal
+            (bo[9] == le and bo[5] == le and bo[1] == le)) # diagonal
 
 def getBoardCopy(board):
     # Make a duplicate of the board list and return it the duplicate.
@@ -160,7 +146,6 @@ def isSpaceFree(board, move):
     # Return true if the passed move is free on the passed board.
     return board[move] == ' '
 
-
 def getPlayerMove(board):
     # Let the player type in his move.
     move = ' '
@@ -168,7 +153,6 @@ def getPlayerMove(board):
         print('What is your next move? (1-9)')
         move = input()
     return int(move)
-
 
 def chooseRandomMoveFromList(board, movesList):
     # Returns a valid move from the passed list on the passed board.
@@ -183,44 +167,6 @@ def chooseRandomMoveFromList(board, movesList):
     else:
         return None
 
-
-# ai to replace
-def getComputerMove(board, computerLetter):
-    # Given a board and the computer's letter, determine where to move and return that move.
-    if computerLetter == 'X':
-        playerLetter = 'O'
-    else:
-        playerLetter = 'X'
-
-    # Here is our algorithm for our Tic Tac Toe AI:
-    # First, check if we can win in the next move
-    for i in range(1, 10):
-        copy = getBoardCopy(board)
-        if isSpaceFree(copy, i):
-            makeMove(copy, computerLetter, i)
-            if isWinner(copy, computerLetter):
-                return i
-
-    # Check if the player could win on his next move, and block them.
-    for i in range(1, 10):
-        copy = getBoardCopy(board)
-        if isSpaceFree(copy, i):
-            makeMove(copy, playerLetter, i)
-            if isWinner(copy, playerLetter):
-                return i
-
-    # Try to take one of the corners, if they are free.
-    move = chooseRandomMoveFromList(board, [1, 3, 7, 9])
-    if move != None:
-        return move
-
-    # Try to take the center, if it is free.
-    if isSpaceFree(board, 5):
-        return 5
-
-    # Move on one of the sides.
-    return chooseRandomMoveFromList(board, [2, 4, 6, 8])
-
 def isBoardFull(board):
     # Return True if every space on the board has been taken. Otherwise return False.
     for i in range(1, 10):
@@ -228,65 +174,80 @@ def isBoardFull(board):
             return False
     return True
 
+def is_normal_state(state):
 
-if __name__ == '__main__':
-    print('Welcome to MCTS-Tic Tac Toe!')
+    if get_possible_next_states(state):
+        state.status = True
+    else:
+        state.status = False
 
-    #while True:
-    #    # Reset the board
-    #    theBoard = [' '] * 10
-    #    playerLetter, computerLetter = inputPlayerLetter()
-    #    turn = whoGoesFirst()
-    #    print('The ' + turn + ' will go first.')
-    #    gameIsPlaying = True
-#
-    #    while gameIsPlaying:
-    #        print(theBoard)
-    #        if turn == 'player':
-    #            # Player's turn.
-    #            drawBoard(theBoard)
-    #            move = getPlayerMove(theBoard)
-    #            makeMove(theBoard, playerLetter, move)
-#
-    #            if isWinner(theBoard, playerLetter):
-    #                drawBoard(theBoard)
-    #                print('Hooray! You have won the game!')
-    #                gameIsPlaying = False
-    #            else:
-    #                if isBoardFull(theBoard):
-    #                    drawBoard(theBoard)
-    #                    print('The game is a tie!')
-    #                    break
-    #                else:
-    #                    turn = 'computer'
-#
-    #        else:
-    #            # Computer's turn.
-    #            move = getComputerMove(theBoard, computerLetter)
-    #            makeMove(theBoard, computerLetter, move)
-#
-    #            if isWinner(theBoard, computerLetter):
-    #                drawBoard(theBoard)
-    #                print('The computer has beaten you! You lose.')
-    #                gameIsPlaying = False
-    #            else:
-    #                if isBoardFull(theBoard):
-    #                    drawBoard(theBoard)
-    #                    print('The game is a tie!')
-    #                    break
-    #                else:
-    #                    turn = 'player'
-#
-    #    if not playAgain():
-    #        break
-    theBoard = [' '] * 10
-    #theBoard[2] = 'X'"""
-    """playerLetter, computerLetter = inputPlayerLetter()
+def normal_game():
+    print("\nWelcome to MonteCarlo-TicTacToe")
+    playerLetter, computerLetter = inputPlayerLetter()
     turn = whoGoesFirst()
-    print('The ' + turn + ' will go first.')
+    theBoard = [' '] * 10
+
+    mcts = MCTS(2, playrandom, get_possible_next_states)
+
+    first_letter = playerLetter if turn == 'player' else computerLetter
+
+    for player in mcts.player_list:
+        if player.nr == 0:
+            player.id = first_letter
+        else:
+            player.id = playerLetter if first_letter == computerLetter else computerLetter
+
+    mcts.root = Node(State(True, theBoard), mcts.player_list[0])
+
     gameIsPlaying = True
 
-    play_random2(theBoard, turn)
-"""
-    #node = Node(theBoard)
-    #playrandom(node)
+    while gameIsPlaying:
+        if turn == 'player':
+            print('\n')
+            drawBoard(theBoard)
+            move = getPlayerMove(theBoard)
+            makeMove(theBoard, playerLetter, move)
+
+            status = True       # da falls das nicht der fall ist in der folgenden Auswertung sowieso das Spiel endet
+
+            next_state = State(status, theBoard)
+            mcts.update_root(next_state)
+
+            if isWinner(theBoard, playerLetter):
+                drawBoard(theBoard)
+                print('You have won the game!')
+                gameIsPlaying = False
+            else:
+                if isBoardFull(theBoard):
+                    drawBoard(theBoard)
+                    print('The game is a tie!')
+                    break
+                else:
+                    turn = 'computer'
+
+        else:
+            print('\n')
+            drawBoard(theBoard)
+
+            mcts.root = mcts.find_next_move()
+            #choosen_next_state = mcts.find_next_move(tree, tree.root.state.infolist[0])
+
+            # make the move that was choosen by the mcts-algorithm
+            for i, entry in enumerate(theBoard):
+                if entry != mcts.root.state.board[i]:
+                    makeMove(theBoard, computerLetter, i)
+                    break
+
+            if isWinner(theBoard, computerLetter):
+                drawBoard(theBoard)
+                print('The computer has beaten you!')
+                gameIsPlaying = False
+            else:
+                if isBoardFull(theBoard):
+                    drawBoard(theBoard)
+                    print('The game is a tie!')
+                    break
+                else:
+                    turn = 'player'
+
+normal_game()
