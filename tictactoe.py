@@ -40,10 +40,11 @@ def playrandom(node):
             else:
                 let = dic[let]
 
+
 def get_possible_next_states(node):
     """function that returnes list with all possible next states"""
 
-    # sollte hier überflüssig sein
+    # sollte hier ueberflüssig sein
     if isWinner(node.state.board, 'X') or isWinner(node.state.board, 'O'):
         print("Error, you should never get here!")
         return []
@@ -227,6 +228,7 @@ def normal_game():
 
         else:
             print('\n')
+            print('\n')
             drawBoard(theBoard)
 
             mcts.root = mcts.find_next_move()
@@ -250,4 +252,88 @@ def normal_game():
                 else:
                     turn = 'player'
 
-normal_game()
+
+def AI_vs_AI():
+    flag = True
+    while flag:
+        playerLetter = random.choice(('X', 'O'))
+        computerLetter = 'O' if playerLetter == 'X' else 'X'
+        turn = whoGoesFirst()
+        theBoard = [' '] * 10
+
+        mcts = MCTS(2, playrandom, get_possible_next_states)
+
+        first_letter = playerLetter if turn == 'player' else computerLetter
+
+        for player in mcts.player_list:
+            if player.nr == 0:
+                player.id = first_letter
+            else:
+                player.id = playerLetter if first_letter == computerLetter else computerLetter
+
+        mcts.root = Node(State(True, theBoard), mcts.player_list[0])
+
+        gameIsPlaying = True
+
+        while gameIsPlaying:
+            if turn == 'player':
+                print('\n')
+
+                drawBoard(theBoard)
+                print('\n')
+                mcts.root = mcts.find_next_move()
+                # choosen_next_state = mcts.find_next_move(tree, tree.root.state.infolist[0])
+
+                # make the move that was choosen by the mcts-algorithm
+                for i, entry in enumerate(theBoard):
+                    if entry != mcts.root.state.board[i]:
+                        makeMove(theBoard, playerLetter, i)
+                        break
+
+                if isWinner(theBoard, playerLetter):
+                    drawBoard(theBoard)
+                    print(playerLetter, ' won the game!')
+                    gameIsPlaying = False
+                else:
+                    if isBoardFull(theBoard):
+                        drawBoard(theBoard)
+                        print('The game is a tie!')
+                        break
+                    else:
+                        turn = 'computer'
+                        input()
+
+            else:
+                print('\n')
+                #print('\n')
+                drawBoard(theBoard)
+                print('\n')
+
+                mcts.root = mcts.find_next_move()
+                # choosen_next_state = mcts.find_next_move(tree, tree.root.state.infolist[0])
+
+                # make the move that was choosen by the mcts-algorithm
+                for i, entry in enumerate(theBoard):
+                    if entry != mcts.root.state.board[i]:
+                        makeMove(theBoard, computerLetter, i)
+                        break
+
+                if isWinner(theBoard, computerLetter):
+                    drawBoard(theBoard)
+                    print(computerLetter, ' won the game!')
+                    gameIsPlaying = False
+                else:
+                    if isBoardFull(theBoard):
+                        drawBoard(theBoard)
+                        print('The game is a tie!')
+                        break
+                    else:
+                        turn = 'player'
+                        input()
+
+        cont = input('another game?\n')
+        if cont not in ['y', 'yes', 'ye']:
+            flag = False
+
+#normal_game()
+AI_vs_AI()

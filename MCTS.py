@@ -74,6 +74,10 @@ class MCTS:
 
                 if child.state.board == new_state.board:
                     self.root = child
+
+                    #
+                    break
+
         else:
             # another player made the first move of the game
             self.root = Node(new_state, self.next_player[self.root.player])
