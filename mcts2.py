@@ -81,7 +81,7 @@ class MCTS:
     def get_next_player(self, player):
         return self.next_player[player]
 
-    def find_next_move(self, global_spiel, current_card):
+    def find_next_move(self, global_spiel):
         """find the best next move in given settings"""
 
         # start time replacement
@@ -93,25 +93,37 @@ class MCTS:
 
             # create new spiel entsprechend dem aktuellen Großen
             spiel = deepcopy(global_spiel)
-            card = deepcopy(current_card)
 
             # selection
             #in select_next node die action der Node spielen und die Kartenlist updaten
             node = self.root
 
+            # erste Karte
+            card = spiel.cards_left[0]
+
             # as long as there are known children, choose next child-node with uct
             while len(node.children) != 0:
                 node = max(node.children, key=lambda nod: nod.calculate_UCT_value())
-                spiel.make_action(node.action) ##########################################################################
+
+                if node.action[2] == 'k':
+                    landschaft = 'K'
+                else:
+                    l_dict = {'o': card.orte, 's': card.strassen, 'w': card.wiesen}
+                    landschaft = [l for l in l_dict[node.action[2]] if l.name == node.action[3]][0]
+                spiel.make_action(card, node.action[0], node.action[1], node.player, landschaft) ######################
 
                 # entferne die Karte, die gespielt wurde aus der Liste, damit die naechste gespielt werden kann
                 del spiel.cards_left[0]
 
+                # naechste Karte ziehen
+                card = spiel.cards_left[0]
 
             # expansion if the choosen note does not represent an and-state of the game
             if node.status:
-                for pos_act in spiel.calucalte_possible_actions(): #################################################
-                    node.children.append(Node())            ########################################################
+                for pos_act in spiel.caluclate_possible_actions(card, node.player):  ##################################
+                    status = True if len(spiel.cards_left) > 1 else False
+                    node.children.append(Node(status, ((pos_act[0], pos_act[1]), pos_act[2], pos_act[3].id,
+                                                       pos_act[3].name), spiel.next_player[node.player]), node)  ######
 
             # simulation
 
@@ -119,8 +131,7 @@ class MCTS:
             choosen_node = node
             if len(node.children) > 0:
                 choosen_node = random.choice(node.children)
-            winner = spiel.play_random1v1()                 #################################################
-
+            winner = spiel.play_random1v1(choosen_node.player, spiel.next_player[choosen_node.player]) ################
             # backprob
             if winner == 0:
                 while choosen_node.parent is not None:
