@@ -2,6 +2,9 @@ import random
 import sys
 import numpy as np
 
+from Spiel_class import Spiel
+from copy import deepcopy
+
 
 class Player:
 
@@ -42,9 +45,12 @@ class Node:
 class State:
     """connection to the game (eg knows the board etc)"""
 
-    def __init__(self, status, board, *args):
+    def __init__(self, status, board, action=None, cards_left=None, *args):
         self.board = board
         self.status = status
+
+        self.action = action
+        self.cards_left = cards_left
 
         self.infolist = [i for i in args]
 
@@ -88,7 +94,7 @@ class MCTS:
     def get_next_player(self, player):
         return self.next_player[player]
 
-    def find_next_move(self):
+    def find_next_move(self, global_spiel):
         """find the best next move in given settings"""
 
         # start time replacement
@@ -98,8 +104,20 @@ class MCTS:
         # loop as long as time is left:
         while t < t_end:
 
+            # create new spiel entsprechend dem aktuellen Großen
+            spiel = deepcopy(global_spiel)
+
             # selection
+
+            #in select_next node die action der Node spielen und die Kartenlist updaten
             promising_node = self.select_next_node()
+            spiel.make_action(promising_node.state.action)
+
+            #kartenliste updaten:
+            for k in spiel.cards_left:
+                if k == karte_zu_entfernen:
+                    spiel.cards_left.remove(k)
+                    break
 
             # expansion if the choosen note does not represent an and-state of the game
             if promising_node.state.status:
@@ -139,6 +157,8 @@ class MCTS:
         player = self.next_player[node.player]
 
         for state in self.get_possible_next_states(node):
+
+            #der state muss so gespeichert werden, dass die action die zu dieser node gefuehrt hat auch direkt so gespielt werden kann
             node.children.append(Node(state, player, node))
 
     def backprop(self, node, result):
