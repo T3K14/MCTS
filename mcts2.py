@@ -15,9 +15,12 @@ class Player:
 
 class Node:
 
-    def __init__(self, state, player=None, parent=None):
+    def __init__(self, status, action, player=None, parent=None):
 
-        self.state = state  # current game state (placed tiles, figures, etc)
+        # status, ob die Node eine EndNode ist oder nicht
+        self.status = status
+        # koordinaten, # rotations, landschaftstyp und landschaftsnamr, player brauchts je hier nicht mehr
+        self.action = action
         self.player = player
 
         self.wins = 0
@@ -27,33 +30,17 @@ class Node:
         self.children = []
 
     def add_child(self, child_node):
-
         self.children.append(child_node)
 
     def get_best_child(self):
         return max(self.children, key=lambda nod: nod.visits)
 
     def calculate_UCT_value(self, c=1.4142):
-
         if self.visits == 0:
             return sys.maxsize
         else:
             result = self.wins / self.visits + c * np.sqrt(np.log(self.parent.visits / self.visits))
             return result
-
-
-class State:
-    """connection to the game (eg knows the board etc)"""
-
-    def __init__(self, status, board, action=None, cards_left=None, *args):
-        self.board = board
-        self.status = status
-
-        self.action = action
-        self.cards_left = cards_left
-
-        self.infolist = [i for i in args]
-
 
 
 class MCTS:
@@ -94,7 +81,7 @@ class MCTS:
     def get_next_player(self, player):
         return self.next_player[player]
 
-    def find_next_move(self, global_spiel):
+    def find_next_move(self, global_spiel, current_card):
         """find the best next move in given settings"""
 
         # start time replacement
@@ -106,34 +93,57 @@ class MCTS:
 
             # create new spiel entsprechend dem aktuellen Großen
             spiel = deepcopy(global_spiel)
+            card = deepcopy(current_card)
 
             # selection
-
             #in select_next node die action der Node spielen und die Kartenlist updaten
-            promising_node = self.select_next_node()
-            spiel.make_action(promising_node.state.action)
+            node = self.root
 
-            #kartenliste updaten:
-            for k in spiel.cards_left:
-                if k == karte_zu_entfernen:
-                    spiel.cards_left.remove(k)
-                    break
+            # as long as there are known children, choose next child-node with uct
+            while len(node.children) != 0:
+                node = max(node.children, key=lambda nod: nod.calculate_UCT_value())
+                spiel.make_action(node.action) ##########################################################################
+
+                # entferne die Karte, die gespielt wurde aus der Liste, damit die naechste gespielt werden kann
+                del spiel.cards_left[0]
+
 
             # expansion if the choosen note does not represent an and-state of the game
-            if promising_node.state.status:
-                self.expand(promising_node)
+            if node.status:
+                for pos_act in spiel.calucalte_possible_actions(): #################################################
+                    node.children.append(Node())            ########################################################
 
             # simulation
 
             # if there has been an expansion select next node at random, else evaluate instant
-            choosen_node = promising_node
-            if len(promising_node.children) > 0:
-                choosen_node = random.choice(promising_node.children)
-            result = self.random_play(choosen_node)
+            choosen_node = node
+            if len(node.children) > 0:
+                choosen_node = random.choice(node.children)
+            winner = spiel.play_random1v1()                 #################################################
 
             # backprob
+            if winner == 0:
+                while choosen_node.parent is not None:
+                    choosen_node.visits += 1
+                    choosen_node.wins += 0.5
+                    choosen_node = choosen_node.parent
 
-            self.backprop(choosen_node, result)
+                # for the root node:
+                choosen_node.visits += 1
+                choosen_node.wins += 0.5
+
+            else:
+                while choosen_node.parent is not None:
+                    choosen_node.visits += 1
+
+                    if choosen_node.player.nummer != winner.nummer:  # if the player for that choosen_node did not win
+                        choosen_node.wins += 1
+                    choosen_node = choosen_node.parent
+
+                # for the root node:
+                choosen_node.visits += 1
+                if choosen_node.player.nummer != winner.nummer:
+                    choosen_node.wins += 1
 
             t += 1
         # return the most visited child node with the "best next move"

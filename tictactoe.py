@@ -335,5 +335,5 @@ def AI_vs_AI():
         if cont not in ['y', 'yes', 'ye']:
             flag = False
 
-#normal_game()
-AI_vs_AI()
+normal_game()
+# AI_vs_AI()
