@@ -95,12 +95,12 @@ class MCTS:
             # create new spiel entsprechend dem aktuellen Großen
             spiel = deepcopy(global_spiel)
 
+            # erste Karte
+            card = spiel.cards_left.pop(0)
+
             # selection
             #in select_next node die action der Node spielen und die Kartenlist updaten
             node = self.root
-
-            # erste Karte
-            card = spiel.cards_left[0]
 
             # as long as there are known children, choose next child-node with uct
             while len(node.children) != 0:
@@ -114,13 +114,11 @@ class MCTS:
                 else:
                     l_dict = {'o': card.orte, 's': card.strassen, 'w': card.wiesen}
                     landschaft = [l for l in l_dict[node.action[2]] if l.name == node.action[3]][0]
-                spiel.make_action(card, node.action[0], node.action[1], spiel.player_to_playernumber[node.player_number], landschaft) ######################
-
-                # entferne die Karte, die gespielt wurde aus der Liste, damit die naechste gespielt werden kann
-                del spiel.cards_left[0]
+                spiel.make_action(card, node.action[0], node.action[1], spiel.player_to_playernumber[node.parent.player_number], landschaft) ######################
 
                 # naechste Karte ziehen
-                card = spiel.cards_left[0]
+                if len(spiel.cards_left) > 0:
+                    card = spiel.cards_left.pop(0)
 
             # expansion if the choosen node does not represent an and-state of the game
             if node.status:
@@ -139,6 +137,20 @@ class MCTS:
             choosen_node = node
             if len(node.children) > 0:
                 choosen_node = random.choice(node.children)
+
+                if choosen_node.action[2] is None:
+                    landschaft = None
+                elif choosen_node.action[2] == 'k':
+                    landschaft = 'K'
+                else:
+                    l_dict = {'o': card.orte, 's': card.strassen, 'w': card.wiesen}
+                    landschaft = [l for l in l_dict[choosen_node.action[2]] if l.name == choosen_node.action[3]][0]
+                spiel.make_action(card, choosen_node.action[0], choosen_node.action[1], spiel.player_to_playernumber[choosen_node.parent.player_number], landschaft)
+
+                # naechste Karte ziehen
+                if len(spiel.cards_left) > 0:
+                    card = spiel.cards_left.pop(0)
+
             winner = spiel.play_random1v1(spiel.player_to_playernumber[choosen_node.player_number], spiel.player_to_playernumber[self.next_player_number[choosen_node.player_number]]) ################
             # backprob
             if winner == 0:
