@@ -15,13 +15,13 @@ class Player:
 
 class Node:
 
-    def __init__(self, status, action, player=None, parent=None):
+    def __init__(self, status, action, player_number=None, parent=None):
 
         # status, ob die Node eine EndNode ist oder nicht
         self.status = status
         # koordinaten, # rotations, landschaftstyp und landschaftsnamr, player brauchts je hier nicht mehr
         self.action = action
-        self.player = player
+        self.player_number = player_number
 
         self.wins = 0
         self.visits = 0
@@ -62,6 +62,8 @@ class MCTS:
         self.random_play = random_play
         self.get_possible_next_states = get_possible_next_states
 
+        self.next_player_number = {1: 2, 2: 1}
+
     def update_root(self, new_state):
         """method to update the root, if another player made a move"""
         if self.root.children:
@@ -86,8 +88,7 @@ class MCTS:
 
         # start time replacement
         t = 0
-        t_end = 3000
-
+        t_end = 500
         # loop as long as time is left:
         while t < t_end:
 
@@ -105,12 +106,15 @@ class MCTS:
             while len(node.children) != 0:
                 node = max(node.children, key=lambda nod: nod.calculate_UCT_value())
 
-                if node.action[2] == 'k':
+                # wenn kein Meeple platziert wird
+                if node.action[2] is None:
+                    landschaft = None
+                elif node.action[2] == 'k':
                     landschaft = 'K'
                 else:
                     l_dict = {'o': card.orte, 's': card.strassen, 'w': card.wiesen}
                     landschaft = [l for l in l_dict[node.action[2]] if l.name == node.action[3]][0]
-                spiel.make_action(card, node.action[0], node.action[1], node.player, landschaft) ######################
+                spiel.make_action(card, node.action[0], node.action[1], spiel.player_to_playernumber[node.player_number], landschaft) ######################
 
                 # entferne die Karte, die gespielt wurde aus der Liste, damit die naechste gespielt werden kann
                 del spiel.cards_left[0]
@@ -118,12 +122,16 @@ class MCTS:
                 # naechste Karte ziehen
                 card = spiel.cards_left[0]
 
-            # expansion if the choosen note does not represent an and-state of the game
+            # expansion if the choosen node does not represent an and-state of the game
             if node.status:
-                for pos_act in spiel.caluclate_possible_actions(card, node.player):  ##################################
+                for pos_act in spiel.calculate_possible_actions(card, spiel.player_to_playernumber[node.player_number]):  ##################################
                     status = True if len(spiel.cards_left) > 1 else False
-                    node.children.append(Node(status, ((pos_act[0], pos_act[1]), pos_act[2], pos_act[3].id,
-                                                       pos_act[3].name), spiel.next_player[node.player]), node)  ######
+                    # wenn die Aktion keine Maeepleplatzierung beinhlatet
+                    if pos_act[3] is None:
+                        node.children.append(Node(status, ((pos_act[0], pos_act[1]), pos_act[2], None, None), self.next_player_number[node.player_number], node))
+                    else:
+                        node.children.append(Node(status, ((pos_act[0], pos_act[1]), pos_act[2], pos_act[3].id,
+                                                       pos_act[3].name), self.next_player_number[node.player_number], node))  ######
 
             # simulation
 
@@ -131,7 +139,7 @@ class MCTS:
             choosen_node = node
             if len(node.children) > 0:
                 choosen_node = random.choice(node.children)
-            winner = spiel.play_random1v1(choosen_node.player, spiel.next_player[choosen_node.player]) ################
+            winner = spiel.play_random1v1(spiel.player_to_playernumber[choosen_node.player_number], spiel.player_to_playernumber[self.next_player_number[choosen_node.player_number]]) ################
             # backprob
             if winner == 0:
                 while choosen_node.parent is not None:
@@ -147,14 +155,17 @@ class MCTS:
                 while choosen_node.parent is not None:
                     choosen_node.visits += 1
 
-                    if choosen_node.player.nummer != winner.nummer:  # if the player for that choosen_node did not win
+                    if choosen_node.player_number != winner.nummer:  # if the player for that choosen_node did not win
                         choosen_node.wins += 1
                     choosen_node = choosen_node.parent
 
                 # for the root node:
                 choosen_node.visits += 1
-                if choosen_node.player.nummer != winner.nummer:
+                if choosen_node.player_number != winner.nummer:
                     choosen_node.wins += 1
+
+            #current best node zum debuggen
+            #print(t, "Aktuell praeferierte Aktion: ", self.root.get_best_child().action, "mit {}/{}".format(self.root.get_best_child().wins, self.root.get_best_child().visits))
 
             t += 1
         # return the most visited child node with the "best next move"
