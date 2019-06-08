@@ -88,7 +88,7 @@ class MCTS:
 
         # start time replacement
         t = 0
-        t_end = 500
+        t_end = 700
         # loop as long as time is left:
         while t < t_end:
 
@@ -123,7 +123,7 @@ class MCTS:
             # expansion if the choosen node does not represent an and-state of the game
             if node.status:
                 for pos_act in spiel.calculate_possible_actions(card, spiel.player_to_playernumber[node.player_number]):  ##################################
-                    status = True if len(spiel.cards_left) > 1 else False
+                    status = True if len(spiel.cards_left) > 0 else False
                     # wenn die Aktion keine Maeepleplatzierung beinhlatet
                     if pos_act[3] is None:
                         node.children.append(Node(status, ((pos_act[0], pos_act[1]), pos_act[2], None, None), self.next_player_number[node.player_number], node))
