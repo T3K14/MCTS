@@ -46,7 +46,7 @@ class Node:
 class MCTS:
     """MCTS-class with essential update functions and the core algorithm functions"""
 
-    def __init__(self, player_list, random_play, get_possible_next_states):
+    def __init__(self, player_list, random_play=None, get_possible_next_states=None):
 
         self.root = None
         self.next_player = {}
@@ -88,7 +88,7 @@ class MCTS:
 
         # start time replacement
         t = 0
-        t_end = 700
+        t_end = 400
         # loop as long as time is left:
         while t < t_end:
 
@@ -127,6 +127,8 @@ class MCTS:
                     # wenn die Aktion keine Maeepleplatzierung beinhlatet
                     if pos_act[3] is None:
                         node.children.append(Node(status, ((pos_act[0], pos_act[1]), pos_act[2], None, None), self.next_player_number[node.player_number], node))
+                    elif pos_act[3] == 'K':
+                        node.children.append(Node(status, ((pos_act[0], pos_act[1]), pos_act[2], 'k', 'k'), self.next_player_number[node.player_number], node))
                     else:
                         node.children.append(Node(status, ((pos_act[0], pos_act[1]), pos_act[2], pos_act[3].id,
                                                        pos_act[3].name), self.next_player_number[node.player_number], node))  ######
