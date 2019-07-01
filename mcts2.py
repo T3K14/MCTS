@@ -16,11 +16,20 @@ class Player:
 class Node:
 
     def __init__(self, status, action, player_number=None, parent=None):
+        """
 
+        :param status:
+        :param action:          action steht fuer die Aktion, die der Gegner spielen muss, um zu dieser Node zu kommen
+
+                                ist ein Tuple (x, y, rotations, lak.id, lak.name), wobei lak die Landschaft auf der
+                                Karte bezeichent, auf die ein Meeple gesetzt werden soll (kann auch None sein)
+
+        :param player_number:   Die Nr. des Spielers, welcher von dieser Node aus den naechsten Zug machen soll
+        :param parent:
+        """
         # status, ob die Node eine EndNode ist oder nicht
         self.status = status
-        # koordinaten, # rotations, landschaftstyp und landschaftsnamr, player brauchts je hier nicht mehr
-        self.action = action
+        self.action = action    # (x, y, rotations, lak.id, lak.name)
         self.player_number = player_number
 
         self.wins = 0
@@ -88,7 +97,7 @@ class MCTS:
 
         # start time replacement
         t = 0
-        t_end = 400
+        t_end = 4000
         # loop as long as time is left:
         while t < t_end:
 
@@ -99,22 +108,25 @@ class MCTS:
             card = spiel.cards_left.pop(0)
 
             # selection
-            #in select_next node die action der Node spielen und die Kartenlist updaten
+            # in select_next node die action der Node spielen und die Kartenlist updaten
+
+            # startnode (aktuelle root-Node vom globalen Spiel)
             node = self.root
 
             # as long as there are known children, choose next child-node with uct
+            # und spiele den Zug der gewaehlten Node
             while len(node.children) != 0:
                 node = max(node.children, key=lambda nod: nod.calculate_UCT_value())
 
                 # wenn kein Meeple platziert wird
-                if node.action[2] is None:
+                if node.action[3] is None:
                     landschaft = None
-                elif node.action[2] == 'k':
-                    landschaft = 'K'
+                elif node.action[3] == 'k':
+                    landschaft = 'k'
                 else:
                     l_dict = {'o': card.orte, 's': card.strassen, 'w': card.wiesen}
-                    landschaft = [l for l in l_dict[node.action[2]] if l.name == node.action[3]][0]
-                spiel.make_action(card, node.action[0], node.action[1], spiel.player_to_playernumber[node.parent.player_number], landschaft) ######################
+                    landschaft = [l for l in l_dict[node.action[3]] if l.name == node.action[4]][0]
+                spiel.make_action(spiel.player_to_playernumber[node.parent.player_number], card, node.action[0], node.action[1], node.action[2], landschaft) ######################
 
                 # naechste Karte ziehen
                 if len(spiel.cards_left) > 0:
@@ -126,11 +138,11 @@ class MCTS:
                     status = True if len(spiel.cards_left) > 0 else False
                     # wenn die Aktion keine Maeepleplatzierung beinhlatet
                     if pos_act[3] is None:
-                        node.children.append(Node(status, ((pos_act[0], pos_act[1]), pos_act[2], None, None), self.next_player_number[node.player_number], node))
-                    elif pos_act[3] == 'K':
-                        node.children.append(Node(status, ((pos_act[0], pos_act[1]), pos_act[2], 'k', 'k'), self.next_player_number[node.player_number], node))
+                        node.children.append(Node(status, (pos_act[0], pos_act[1], pos_act[2], None, None), self.next_player_number[node.player_number], node))
+                    elif pos_act[3] == 'k':
+                        node.children.append(Node(status, (pos_act[0], pos_act[1], pos_act[2], 'k', 1), self.next_player_number[node.player_number], node))
                     else:
-                        node.children.append(Node(status, ((pos_act[0], pos_act[1]), pos_act[2], pos_act[3].id,
+                        node.children.append(Node(status, (pos_act[0], pos_act[1], pos_act[2], pos_act[3].id,
                                                        pos_act[3].name), self.next_player_number[node.player_number], node))  ######
 
             # simulation
@@ -140,20 +152,20 @@ class MCTS:
             if len(node.children) > 0:
                 choosen_node = random.choice(node.children)
 
-                if choosen_node.action[2] is None:
+                if choosen_node.action[3] is None:
                     landschaft = None
-                elif choosen_node.action[2] == 'k':
-                    landschaft = 'K'
+                elif choosen_node.action[3] == 'k':
+                    landschaft = 'k'
                 else:
                     l_dict = {'o': card.orte, 's': card.strassen, 'w': card.wiesen}
-                    landschaft = [l for l in l_dict[choosen_node.action[2]] if l.name == choosen_node.action[3]][0]
-                spiel.make_action(card, choosen_node.action[0], choosen_node.action[1], spiel.player_to_playernumber[choosen_node.parent.player_number], landschaft)
+                    landschaft = [l for l in l_dict[choosen_node.action[3]] if l.name == choosen_node.action[4]][0]
+                spiel.make_action(spiel.player_to_playernumber[choosen_node.parent.player_number], card, choosen_node.action[0], choosen_node.action[1], choosen_node.action[2], landschaft)
 
                 # naechste Karte ziehen
-                if len(spiel.cards_left) > 0:
-                    card = spiel.cards_left.pop(0)
+                #if len(spiel.cards_left) > 0:
+                #    card = spiel.cards_left.pop(0)
 
-            winner = spiel.play_random1v1(spiel.player_to_playernumber[choosen_node.player_number], spiel.player_to_playernumber[self.next_player_number[choosen_node.player_number]]) ################
+            winner = spiel.play_random1v1(spiel.player_to_playernumber[choosen_node.player_number], spiel.player_to_playernumber[self.next_player_number[choosen_node.player_number]], random_card_draw=False) ################
             # backprob
             if winner == 0:
                 while choosen_node.parent is not None:
