@@ -97,7 +97,7 @@ class MCTS:
 
         # start time replacement
         t = 0
-        t_end = 4000
+        t_end = 12000
         # loop as long as time is left:
         while t < t_end:
 
@@ -196,6 +196,8 @@ class MCTS:
             t += 1
         # return the most visited child node with the "best next move"
         return self.root.get_best_child()
+
+
 
     def select_next_node(self):
         """method to choose the next node from the start at root node until one approaches the end of the tree"""
